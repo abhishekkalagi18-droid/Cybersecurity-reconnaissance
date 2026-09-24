@@ -124,7 +124,7 @@ The exact availability and requirements of individual backends can depend on the
 | Backend list  | `theHarvester --help`    | Available  |
 
 
-## 2. Environment
+## 3. Environment
 
 | Item    | Details               |
 | ------- | --------------------- |
@@ -135,7 +135,7 @@ The exact availability and requirements of individual backends can depend on the
 
 ---
 
-## 3. Basic Syntax
+## 4. Basic Syntax
 
 ```bash
 theHarvester -d <domain> -b <source>
@@ -162,7 +162,7 @@ theHarvester -d certifiedhacker.com -b crtsh
 
 ---
 
-# 4. Activity 1 — Certificate Transparency
+# 5. Activity 1 — Certificate Transparency
 
 ### Command
 
@@ -189,7 +189,7 @@ Finding a hostname does not automatically mean that the host is currently active
 
 ---
 
-# 5. Activity 2 — DNS Resolution
+# 6. Activity 2 — DNS Resolution
 
 ### Command
 
@@ -236,7 +236,7 @@ IP association
 
 ---
 
-# 6. Activity 3 — DNS Lookup
+# 7. Activity 3 — DNS Lookup
 
 ### Command
 
@@ -262,7 +262,7 @@ Therefore, it should not be considered purely passive reconnaissance.
 
 ---
 
-# 7. Activity 4 — DNS Brute Force
+# 8. Activity 4 — DNS Brute Force
 
 ### Command
 
@@ -289,7 +289,7 @@ This demonstrated that installed tools can still have missing dependencies or su
 
 ---
 
-# 8. Activity 5 — Result Limits
+# 9. Activity 5 — Result Limits
 
 ### Commands
 
@@ -313,7 +313,7 @@ Backend behavior can affect how command-line options behave in practice.
 
 ---
 
-# 9. Activity 6 — Output Export
+# 10. Activity 6 — Output Export
 
 ### Command
 
@@ -348,7 +348,7 @@ Report
 
 ---
 
-# 10. Activity 7 — Wayback Archive
+# 11. Activity 7 — Wayback Archive
 
 ### Command
 
@@ -372,7 +372,7 @@ Different OSINT sources have different datasets and coverage. A reconnaissance w
 
 ---
 
-# 11. Activity 8 — URLScan
+# 12. Activity 8 — URLScan
 
 ### Command
 
@@ -428,7 +428,7 @@ This demonstrates the value of using multiple OSINT sources.
 
 ---
 
-# 12. Comparing the Sources
+# 13. Comparing the Sources
 
 | Backend          | Main Information Observed            |
 | ---------------- | ------------------------------------ |
@@ -458,7 +458,7 @@ Document
 
 ---
 
-# 13. Overall Practical Findings
+# 14. Overall Practical Findings
 
 | Test                    | Main Result                                  |
 | ----------------------- | -------------------------------------------- |
@@ -473,7 +473,7 @@ Document
 
 ---
 
-# 14. Important Reconnaissance Lessons
+# 15. Important Reconnaissance Lessons
 
 ### Discovery ≠ Vulnerability
 
@@ -501,7 +501,7 @@ OSINT information may be incomplete, outdated, or dependent on the source's cove
 
 ---
 
-# 15. Troubleshooting
+# 16. Troubleshooting
 
 ### DNS Brute Force Error
 
@@ -515,7 +515,7 @@ Instead of treating this as a failed learning exercise, it was documented as a t
 
 ---
 
-# 16. What I Learned
+# 17. What I Learned
 
 Through this practical exercise I learned:
 
@@ -534,7 +534,7 @@ Through this practical exercise I learned:
 
 ---
 
-# 17. Ethical Considerations
+# 18. Ethical Considerations
 
 Reconnaissance should only be performed against:
 
@@ -547,7 +547,7 @@ Do not use collected information for unauthorized access, exploitation, credenti
 
 ---
 
-# 18. Conclusion
+# 19. Conclusion
 
 This practical exercise demonstrated that theHarvester can combine information from different OSINT sources to build a broader picture of a target's public digital footprint.
 
