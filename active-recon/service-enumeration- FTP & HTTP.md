@@ -2,24 +2,29 @@
 
 ## Overview
 
-Today I performed authorized service enumeration on a **Metasploitable 2** lab machine using **Kali Linux**.
+Service enumeration is the process of gathering detailed information about
+services running on a target.
 
-### Target
+Today's practice was performed against an authorized Metasploitable 2 lab.
 
-* **IP:** `192.168.127.132`
-* **Environment:** Kali Linux → Metasploitable 2
+**Target:** `192.168.127.132`
+**Platform:** Kali Linux → Metasploitable 2
 
-### Topics Covered
+Topics covered:
 
-* FTP enumeration
-* HTTP enumeration
-* Nmap NSE scripts
-* HTTP headers and methods
-* Web path enumeration
-* `phpinfo()` information disclosure
+* FTP NSE enumeration
+* Anonymous FTP
+* FTP service information
+* HTTP title enumeration
+* HTTP headers
+* HTTP methods
+* HTTP content enumeration
+* `phpinfo.php`
+* HTTP `OPTIONS`
 * Directory listing
-* HTML link extraction
-* Relative URL handling
+* Apache documentation enumeration
+* Compressed `.gz` files
+* Apache changelog analysis
 
 ---
 
@@ -27,11 +32,15 @@ Today I performed authorized service enumeration on a **Metasploitable 2** lab m
 
 ## 1.1 Finding FTP NSE Scripts
 
+First, available FTP-related NSE scripts were reviewed.
+
+### Command
+
 ```bash
 nmap --script-help "ftp-*"
 ```
 
-Important scripts identified:
+### Important scripts identified
 
 ```text
 ftp-anon
@@ -44,15 +53,22 @@ ftp-vsftpd-backdoor
 ftp-vuln-cve2010-4221
 ```
 
-For this lab, safe enumeration scripts such as `ftp-anon` and `ftp-syst` were used.
+### Observation
 
-Brute-force and exploit scripts were not executed.
+Nmap provides different FTP scripts for authentication checks,
+information gathering, vulnerability checks, and brute-force testing.
+
+For this exercise, safe enumeration was performed instead of brute-force
+or exploit testing.
 
 ---
 
-## 1.2 Anonymous FTP Enumeration
+# 2. Anonymous FTP Enumeration
 
-The `ftp-anon` NSE script checks whether anonymous FTP authentication is enabled.
+The `ftp-anon` script was used to determine whether anonymous FTP login
+was enabled.
+
+### Command
 
 ```bash
 nmap --script ftp-anon -p 21 192.168.127.132
@@ -66,23 +82,33 @@ Anonymous FTP login allowed (FTP code 230)
 
 ### Finding
 
-Anonymous FTP authentication is enabled on port `21`.
+Anonymous FTP authentication is enabled on port 21.
 
 ### Security Impact
 
-Anonymous access may allow unauthenticated users to access files depending on the FTP server configuration.
+Anonymous access may allow unauthenticated users to access files depending
+on the FTP server configuration.
+
+The result confirms anonymous login but does not automatically prove that
+sensitive files can be read or modified.
 
 ---
 
-## 1.3 FTP System Information
+# 3. FTP System Information
+
+The `ftp-syst` NSE script was used to gather information from the FTP
+service.
+
+### Command
 
 ```bash
 nmap --script ftp-syst -p21 192.168.127.132
 ```
 
-Important information obtained:
+### Important output
 
 ```text
+Connected to 192.168.127.128
 Logged in as ftp
 TYPE ASCII
 No session bandwidth limit
@@ -97,16 +123,24 @@ vsFTPd 2.3.4
 The FTP service disclosed:
 
 * `vsFTPd 2.3.4`
-* FTP session information
+* Session information
 * Session timeout
 * Plain-text control connection
 * Plain-text data connection
 
+### Security Note
+
+Traditional FTP does not provide encryption by default. Credentials and
+transferred data can therefore be exposed to network interception on an
+untrusted network.
+
 ---
 
-# 2. HTTP Enumeration
+# 4. HTTP Title Enumeration
 
-## 2.1 HTTP Title Enumeration
+The `http-title` NSE script was used to identify web page titles.
+
+### Command
 
 ```bash
 nmap --script http-title -p 80,8180 192.168.127.132
@@ -121,14 +155,18 @@ nmap --script http-title -p 80,8180 192.168.127.132
 
 ### Observation
 
-Two web services were identified:
+Two HTTP services were identified:
 
 * Port `80` → Apache HTTP Server
 * Port `8180` → Apache Tomcat
 
 ---
 
-## 2.2 HTTP Headers
+# 5. HTTP Header Enumeration
+
+The `http-headers` NSE script was used to inspect HTTP response headers.
+
+### Command
 
 ```bash
 nmap --script http-headers 192.168.127.132
@@ -139,6 +177,7 @@ nmap --script http-headers 192.168.127.132
 ```text
 Server: Apache/2.2.8 (Ubuntu) DAV/2
 X-Powered-By: PHP/5.2.4-2ubuntu5.10
+Connection: close
 Content-Type: text/html
 ```
 
@@ -147,21 +186,28 @@ Content-Type: text/html
 ```text
 Server: Apache-Coyote/1.1
 Content-Type: text/html;charset=ISO-8859-1
+Connection: close
 ```
 
 ### Observation
 
-HTTP response headers disclosed server and technology information useful for service fingerprinting.
+The response headers disclosed server and technology information.
+
+This information is useful for service and technology fingerprinting.
 
 ---
 
-## 2.3 HTTP Methods
+# 6. HTTP Method Enumeration
+
+The `http-methods` NSE script was used to identify supported HTTP methods.
+
+### Command
 
 ```bash
 nmap --script http-methods 192.168.127.132
 ```
 
-Observed methods:
+### Observed methods
 
 ```text
 GET
@@ -170,19 +216,27 @@ POST
 OPTIONS
 ```
 
-> A supported HTTP method is not automatically a vulnerability. It is an enumeration result that requires further testing.
+### Observation
+
+The HTTP services reported the above methods.
+
+A supported HTTP method is not automatically a vulnerability. It is an
+enumeration result that requires further investigation.
 
 ---
 
-# 3. HTTP Content Enumeration
+# 7. HTTP Content Enumeration
 
-The `http-enum` NSE script was used to discover interesting web paths.
+The `http-enum` NSE script was used to identify potentially interesting
+web paths.
+
+### Command
 
 ```bash
 nmap --script http-enum -p80 192.168.127.132
 ```
 
-### Discovered Paths
+### Discovered paths
 
 ```text
 /tikiwiki/
@@ -194,13 +248,18 @@ nmap --script http-enum -p80 192.168.127.132
 /index/
 ```
 
-These paths were investigated as part of the enumeration process.
+### Observation
+
+These paths were identified as potentially interesting resources.
+
+The discovery of a path alone does not prove that the resource is
+vulnerable.
 
 ---
 
-# 4. phpinfo.php Investigation
+# 8. phpinfo.php Investigation
 
-One discovered path was:
+One of the paths discovered by `http-enum` was:
 
 ```text
 /phpinfo.php
@@ -212,13 +271,15 @@ Full URL:
 http://192.168.127.132/phpinfo.php
 ```
 
-## 4.1 HTTP Response
+## 8.1 Check Response Headers
+
+### Command
 
 ```bash
 curl -I http://192.168.127.132/phpinfo.php
 ```
 
-Result:
+### Result
 
 ```text
 HTTP/1.1 200 OK
@@ -227,13 +288,18 @@ X-Powered-By: PHP/5.2.4-2ubuntu5.10
 Content-Type: text/html
 ```
 
-### Finding
+### Observation
 
-The `phpinfo.php` page is publicly accessible.
+The `phpinfo.php` endpoint was publicly accessible and returned
+HTTP `200 OK`.
 
-## 4.2 Information Disclosure
+---
 
-The page exposed information including:
+# 9. phpinfo Information Disclosure
+
+The full `phpinfo()` page was investigated.
+
+Information exposed included:
 
 * PHP version
 * Linux system information
@@ -245,28 +311,36 @@ The page exposed information including:
 
 ### Finding
 
-**Publicly accessible `phpinfo()` page**
+**Publicly Accessible phpinfo() Endpoint**
 
 ### Impact
 
-This represents an information-disclosure issue because detailed server and PHP configuration information is exposed.
+A public `phpinfo()` page can disclose detailed information about the
+server and PHP environment.
 
-It does not by itself prove system compromise.
+This information can assist technology fingerprinting and further
+reconnaissance.
+
+The presence of `phpinfo()` alone does not prove remote code execution or
+complete system compromise.
 
 ---
 
-# 5. OPTIONS Request
+# 10. OPTIONS Request
 
-An `OPTIONS` request was sent to `phpinfo.php`.
+An HTTP `OPTIONS` request was sent directly to `phpinfo.php`.
+
+### Command
 
 ```bash
 curl -I -X OPTIONS http://192.168.127.132/phpinfo.php
 ```
 
-Result:
+### Result
 
 ```text
 HTTP/1.1 200 OK
+Date: Mon, 28 Sep 2026 16:19:28 GMT
 Server: Apache/2.2.8 (Ubuntu) DAV/2
 X-Powered-By: PHP/5.2.4-2ubuntu5.10
 Content-Length: 48014
@@ -275,37 +349,43 @@ Content-Type: text/html
 
 ### Observation
 
-The endpoint returned `200 OK` to the `OPTIONS` request.
+The endpoint successfully processed the `OPTIONS` request.
 
-No `Allow:` header was returned, so the complete list of allowed methods could not be determined from this response.
+No `Allow:` header was returned in the observed response, so the complete
+list of allowed methods could not be determined from this response alone.
 
 ---
 
-# 6. Directory Listing
+# 11. /doc/ Directory Investigation
 
-The `/doc/` path discovered through `http-enum` was investigated.
+The `/doc/` path discovered using `http-enum` was investigated.
 
-## 6.1 Check `/doc/`
+## 11.1 Check Directory
+
+### Command
 
 ```bash
 curl -I http://192.168.127.132/doc/
 ```
 
-Result:
+### Result
 
 ```text
 HTTP/1.1 200 OK
+Date: Mon, 28 Sep 2026 16:37:10 GMT
 Server: Apache/2.2.8 (Ubuntu) DAV/2
 Content-Type: text/html;charset=UTF-8
 ```
 
-The directory was then retrieved:
+The directory content was then retrieved.
+
+### Command
 
 ```bash
 curl http://192.168.127.132/doc/
 ```
 
-The response displayed:
+The page displayed:
 
 ```text
 Index of /doc/
@@ -313,19 +393,22 @@ Index of /doc/
 
 ### Finding
 
-Directory listing is enabled on `/doc/`.
+Directory listing was enabled on `/doc/`.
 
 ---
 
-# 7. Extracting Links from Directory Listing
+# 12. Extracting Links from /doc/
 
-Instead of manually reading the complete HTML page, `href` values were extracted.
+Instead of manually reading the complete HTML page, links were extracted
+using `grep`.
+
+### Command
 
 ```bash
 curl -s http://192.168.127.132/doc/ | grep -Eo 'href="[^"]+"' | head -30
 ```
 
-Example results:
+### Results
 
 ```text
 href="?C=N;O=D"
@@ -377,11 +460,11 @@ bind9/
 binutils/
 ```
 
-This can provide additional information for software fingerprinting.
+This provides additional software/package information for fingerprinting.
 
 ---
 
-# 8. Understanding the Link Extraction Command
+# 13. Understanding the Link Extraction Command
 
 Command:
 
@@ -389,32 +472,31 @@ Command:
 curl -s http://192.168.127.132/doc/ | grep -Eo 'href="[^"]+"' | head -30
 ```
 
-### `curl -s`
+## curl
 
 ```bash
 curl -s http://192.168.127.132/doc/
 ```
 
-Retrieves the webpage.
+* `curl` retrieves the HTTP response.
+* `-s` enables silent mode.
 
-`-s` means silent mode.
-
-### Pipe `|`
+## Pipe
 
 ```text
 |
 ```
 
-Passes the output of one command to the next command.
+The pipe sends the output of one command to the next command.
 
-### `grep -Eo`
+## grep
 
 ```bash
 grep -Eo 'href="[^"]+"'
 ```
 
-* `-E` → Extended Regular Expression
-* `-o` → Print only the matching part
+* `-E` → Extended Regular Expressions
+* `-o` → Print only matching text
 
 The pattern:
 
@@ -422,13 +504,21 @@ The pattern:
 href="[^"]+"
 ```
 
-extracts links such as:
+extracts `href` attributes from the HTML.
+
+Example:
+
+```html
+<a href="apache2/">apache2</a>
+```
+
+becomes:
 
 ```text
 href="apache2/"
 ```
 
-### `head -30`
+## head
 
 ```bash
 head -30
@@ -438,7 +528,7 @@ Displays only the first 30 results.
 
 ---
 
-# 9. Relative URL Investigation
+# 14. Relative URL Investigation
 
 One extracted link was:
 
@@ -446,110 +536,352 @@ One extracted link was:
 href="apache2/"
 ```
 
-Because the link appeared inside `/doc/`, its relative path resolves to:
+Because this link appeared inside `/doc/`, the resolved path is:
 
 ```text
 /doc/apache2/
 ```
 
-I first tested:
+An attempt was made to access:
+
+### Command
 
 ```bash
 curl -s http://192.168.127.132/apache2/ | head -30
 ```
 
-Result:
+### Result
 
 ```text
-HTTP/1.1 404 Not Found
+404 Not Found
 ```
 
-The server returned:
+The server reported:
 
 ```text
 The requested URL /apache2/ was not found on this server.
 ```
 
-### Explanation
+### Observation
 
-The issue was the path.
+The path was incorrect.
 
-The extracted link:
-
-```text
-apache2/
-```
-
-was relative to:
-
-```text
-/doc/
-```
-
-Therefore, the correct resolved path is:
+The link `apache2/` was relative to `/doc/`, therefore the correct path
+is:
 
 ```text
 /doc/apache2/
 ```
 
-This demonstrated the importance of understanding relative URLs during web enumeration.
+This demonstrated the importance of understanding relative URLs during
+web enumeration.
 
 ---
 
-# 10. Findings Summary
+# 15. Apache Documentation Directory
 
-## FTP
+The correct Apache documentation path was accessed.
 
-### Anonymous FTP
+### Command
 
-```text
-Anonymous FTP login allowed
+```bash
+curl -s http://192.168.127.132/doc/apache2/ | head -30
 ```
 
-### FTP Information Disclosure
+### Result
+
+The server returned:
 
 ```text
-vsFTPd 2.3.4
-Plain-text FTP connections
+Index of /doc/apache2
 ```
 
-## HTTP
+The directory contained:
 
-### Server Information Disclosure
+```text
+NEWS.Debian.gz
+changelog.Debian.gz
+copyright
+```
+
+The listing also showed file sizes:
+
+```text
+NEWS.Debian.gz       1.0K
+changelog.Debian.gz  30K
+copyright            31K
+```
+
+### Observation
+
+Apache package documentation was publicly accessible through the directory
+listing.
+
+---
+
+# 16. Extracting Apache Documentation Links
+
+The available links were extracted with:
+
+### Command
+
+```bash
+curl -s http://192.168.127.132/doc/apache2/ | grep -Eo 'href="[^"]+"' | tail -10
+```
+
+### Result
+
+```text
+href="?C=N;O=D"
+href="?C=M;O=A"
+href="?C=S;O=A"
+href="?C=D;O=A"
+href="/doc/"
+href="NEWS.Debian.gz"
+href="changelog.Debian.gz"
+href="copyright"
+```
+
+### Observation
+
+Three documentation files were confirmed:
+
+```text
+NEWS.Debian.gz
+changelog.Debian.gz
+copyright
+```
+
+---
+
+# 17. Reading the Apache Copyright File
+
+The plain-text `copyright` file was retrieved.
+
+### Command
+
+```bash
+curl -s http://192.168.127.132/doc/apache2/copyright | tail -30
+```
+
+### Observation
+
+The output contained:
+
+* Software licensing information
+* Copyright notices
+* Apache-related documentation
+* OpenDocument icon licensing information
+
+This is not a vulnerability by itself.
+
+The important observation is that package documentation was publicly
+readable through the web server.
+
+---
+
+# 18. Compressed Changelog Investigation
+
+The `changelog.Debian.gz` file was identified as a gzip-compressed file.
+
+## 18.1 Initial Attempt
+
+### Command
+
+```bash
+curl -s http://192.168.127.132/doc/apache2/changelog.Debian.gz | head
+```
+
+### Result
+
+The terminal displayed unreadable characters.
+
+### Explanation
+
+The `.gz` file contains compressed binary data.
+
+The data must be decompressed before it can be read as text.
+
+---
+
+# 19. Decompressing the Changelog
+
+The compressed changelog was decompressed directly through a pipeline.
+
+### Command
+
+```bash
+curl -s http://192.168.127.132/doc/apache2/changelog.Debian.gz | gzip -dc | head -30
+```
+
+### Result
+
+The beginning of the changelog showed:
+
+```text
+apache2 (2.2.8-1) unstable; urgency=low
+```
+
+The changelog also contained historical security-related entries including:
+
+```text
+CVE-2007-5000
+CVE-2007-6388
+CVE-2007-6421
+CVE-2007-6422
+CVE-2008-0005
+```
+
+### Important Observation
+
+These CVEs appeared as historical entries in the Apache package changelog.
+
+Their presence in the changelog does **not** prove that the target is
+currently vulnerable to those CVEs.
+
+---
+
+# 20. Extracting Apache Package Versions
+
+The Apache package entries were extracted from the decompressed changelog.
+
+### Command
+
+```bash
+curl -s http://192.168.127.132/doc/apache2/changelog.Debian.gz | gzip -dc | grep -m 5 "^apache2"
+```
+
+### Result
+
+```text
+apache2 (2.2.8-1) unstable; urgency=low
+apache2 (2.2.6-3) unstable; urgency=low
+apache2 (2.2.6-2) unstable; urgency=low
+apache2 (2.2.6-1) unstable; urgency=low
+apache2 (2.2.4-3) unstable; urgency=low
+```
+
+### Observation
+
+The latest Apache package version listed in the changelog was:
+
+```text
+2.2.8-1
+```
+
+This is consistent with the HTTP service information previously observed:
 
 ```text
 Apache/2.2.8 (Ubuntu)
-PHP/5.2.4-2ubuntu5.10
-Apache-Coyote/1.1
 ```
-
-### phpinfo Exposure
-
-```text
-/phpinfo.php
-```
-
-The endpoint exposes detailed PHP/server configuration information.
-
-### Directory Listing
-
-```text
-/doc/
-```
-
-Directory indexing is enabled and package documentation directories are visible.
 
 ---
 
-# 11. Commands Used
+# 21. Understanding the Changelog Command
+
+Command:
+
+```bash
+curl -s http://192.168.127.132/doc/apache2/changelog.Debian.gz | gzip -dc | grep -m 5 "^apache2"
+```
+
+### `curl -s`
+
+Downloads the compressed changelog silently.
+
+### `gzip -dc`
+
+Decompresses the gzip data and sends the result to standard output.
+
+### `grep`
+
+Searches the decompressed text.
+
+### `-m 5`
+
+Stops after five matching lines.
+
+### `^apache2`
+
+The `^` character means the line must begin with:
+
+```text
+apache2
+```
+
+---
+
+# 22. Enumeration Chain
+
+The investigation followed this progression:
+
+```text
+FTP
+ ↓
+Anonymous FTP
+ ↓
+FTP service information
+ ↓
+HTTP
+ ↓
+HTTP titles
+ ↓
+HTTP headers
+ ↓
+HTTP methods
+ ↓
+HTTP path enumeration
+ ↓
+/phpinfo.php
+ ↓
+/doc/
+ ↓
+Directory listing
+ ↓
+/doc/apache2/
+ ↓
+Apache documentation
+ ↓
+changelog.Debian.gz
+ ↓
+gzip decompression
+ ↓
+Apache package history
+```
+
+---
+
+# 23. Findings Summary
+
+| Service | Finding / Observation            | Evidence                   |
+| ------- | -------------------------------- | -------------------------- |
+| FTP     | Anonymous login enabled          | `ftp-anon` → FTP code 230  |
+| FTP     | Service information exposed      | `vsFTPd 2.3.4`             |
+| FTP     | Plain-text FTP connections       | `ftp-syst` output          |
+| HTTP    | Apache service                   | Apache/2.2.8               |
+| HTTP    | Tomcat service                   | Apache Tomcat/5.5          |
+| HTTP    | Technology disclosure            | HTTP response headers      |
+| HTTP    | `phpinfo()` exposed              | `/phpinfo.php` → HTTP 200  |
+| HTTP    | Directory listing enabled        | `/doc/` → `Index of /doc/` |
+| HTTP    | Package documentation exposed    | `/doc/apache2/`            |
+| HTTP    | Apache changelog accessible      | `changelog.Debian.gz`      |
+| HTTP    | Apache package history disclosed | `2.2.8-1` listed           |
+
+---
+
+# 24. Complete Commands Used
 
 ## FTP
 
 ```bash
 nmap --script-help "ftp-*"
+```
 
+```bash
 nmap --script ftp-anon -p 21 192.168.127.132
+```
 
+```bash
 nmap --script ftp-syst -p21 192.168.127.132
 ```
 
@@ -557,53 +889,107 @@ nmap --script ftp-syst -p21 192.168.127.132
 
 ```bash
 nmap --script http-title -p 80,8180 192.168.127.132
+```
 
+```bash
 nmap --script http-headers 192.168.127.132
+```
 
+```bash
 nmap --script http-methods 192.168.127.132
+```
 
+```bash
 nmap --script http-enum -p80 192.168.127.132
+```
 
+```bash
 curl -I http://192.168.127.132/phpinfo.php
+```
 
+```bash
 curl -I -X OPTIONS http://192.168.127.132/phpinfo.php
+```
 
+```bash
 curl -I http://192.168.127.132/doc/
+```
 
+```bash
 curl http://192.168.127.132/doc/
+```
 
+```bash
 curl -s http://192.168.127.132/doc/ | grep -Eo 'href="[^"]+"' | head -30
+```
 
+```bash
 curl -s http://192.168.127.132/apache2/ | head -30
+```
+
+```bash
+curl -s http://192.168.127.132/doc/apache2/ | head -30
+```
+
+```bash
+curl -s http://192.168.127.132/doc/apache2/ | grep -Eo 'href="[^"]+"' | tail -10
+```
+
+```bash
+curl -s http://192.168.127.132/doc/apache2/copyright | tail -30
+```
+
+```bash
+curl -s http://192.168.127.132/doc/apache2/changelog.Debian.gz | head
+```
+
+```bash
+curl -s http://192.168.127.132/doc/apache2/changelog.Debian.gz | gzip -dc | head -30
+```
+
+```bash
+curl -s http://192.168.127.132/doc/apache2/changelog.Debian.gz | gzip -dc | grep -m 5 "^apache2"
 ```
 
 ---
 
-# 12. Key Learning
+# 25. Key Learning Outcomes
 
 Today's practice covered:
 
-* FTP NSE enumeration
-* Anonymous FTP detection
+* FTP NSE script discovery
+* Anonymous FTP enumeration
 * FTP service fingerprinting
 * HTTP service enumeration
-* Nmap HTTP NSE scripts
-* HTTP headers
+* HTTP response headers
 * HTTP methods
-* Web path discovery
+* Web content enumeration
 * `phpinfo()` information disclosure
-* Directory listing
+* HTTP `OPTIONS` requests
+* Apache directory indexing
 * HTML link extraction
 * `grep` regular expressions
 * Linux pipes
-* Relative URL handling
+* Relative URLs
+* HTTP redirects
 * HTTP `200 OK` and `404 Not Found`
+* Nested web-directory enumeration
+* Gzip-compressed files
+* `gzip -dc`
+* Apache package changelogs
+* Extracting version information with `grep`
+* Distinguishing information disclosure from confirmed vulnerability
 
 ---
 
-## Lab Environment
+## Lab Scope
 
-All testing documented here was performed against the authorized **Metasploitable 2** lab environment.
+All testing documented here was performed against the authorized
+Metasploitable 2 laboratory target:
 
-**Target:** `192.168.127.132`
-**Attacker:** Kali Linux
+```text
+192.168.127.132
+```
+
+The purpose was cybersecurity learning, service enumeration, and
+reconnaissance practice.
